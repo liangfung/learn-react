@@ -1,4 +1,5 @@
-import React, {Component, PropTypes, cloneElement} from 'react';
+import React, {Component, cloneElement} from 'react';
+import ReactDOM from 'react-dom'
 import classnames from 'classnames'
 import './tabs.scss'
 
@@ -20,7 +21,7 @@ class Tabs extends Component {
     if ('activeIndex' in curProps) {
       activeIndex = curProps.activeIndex
     } else if ('defaultActiveIndex' in curProps) {
-      activeIndex = curprops.defaultActiveIndex
+      activeIndex = curProps.defaultActiveIndex
     }
 
     this.state = {
@@ -36,8 +37,8 @@ class Tabs extends Component {
   }
 
   handleTabClick = activeIndex => {
-    const preIndex = this.state.activeIndex
-    
+    const prevIndex = this.state.activeIndex
+    console.log('click', this)
     // 
     if (this.state.activeIndex !== activeIndex && 'defaultActiveIndex' in this.props) {
       this.setState({
@@ -45,7 +46,7 @@ class Tabs extends Component {
         prevIndex
       })
       // 执行回调
-      this.props.onChange({activeIndex, preIndex})
+      this.props.onChange({activeIndex, prevIndex})
     }
   }
 
@@ -105,7 +106,7 @@ class TabNav extends Component {
       let events = {}
       if(!child.props.disabled) {
         events = {
-          onClick: this.props.onTabClick.bind(this, order)
+          onClick: () => {this.props.onTabClick(order)}
         }
       }
 
@@ -140,7 +141,7 @@ class TabNav extends Component {
     })
 
     return (
-      <div className={rootClasses} role="tablist">
+      <div className={rootClass} role="tablist">
         <ul className={classes}>
           {this.getTabs()}
         </ul>
@@ -148,3 +149,70 @@ class TabNav extends Component {
     )
   }
 }
+
+class TabContent extends Component {
+
+  getTabContent() {
+    const {classPrefix, panels, activeIndex} = this.props
+    return React.Children.map(panels, child => {
+      if (!child) {return;}
+
+      const order = parseInt(child.props.order, 10);
+      const isActive = activeIndex === order;
+      return cloneElement(child, {
+        classPrefix,
+        isActive,
+        children: child.props.children,
+        key: `tabpanel-${order}`
+      })
+    })
+  }
+
+  render() {
+    const {classPrefix} = this.props
+    const classes = classnames({
+      [`${classPrefix}-content`]: true
+    })
+
+    return (
+      <div className={classes}>
+        {this.getTabContent()}
+      </div>
+    )
+  }
+}
+
+class TabPane extends Component {
+  
+  render() {
+    const {classPrefix, children, className, isActive} = this.props
+
+    const classes = classnames({
+      [className]: className,
+      [`${classPrefix}-panel`]: true,
+      [`${classPrefix}-active`]: isActive
+    })
+
+    return (
+      <div
+        role="tabpanel"
+        className={classes}
+        aria-hidden={!isActive}
+      >
+        {children}
+      </div>
+    )
+  }
+}
+
+ReactDOM.render(
+  (<Tabs
+    classPrefix='tabs'
+    defaultActiveIndex={0}
+  >
+    <TabPane order={0} tab={'1'}>11111</TabPane>
+    <TabPane order={1} tab={'2'}>222</TabPane>
+    <TabPane order={2} tab={'3'}>333</TabPane>
+  </Tabs>),
+  document.getElementById('root')
+)
